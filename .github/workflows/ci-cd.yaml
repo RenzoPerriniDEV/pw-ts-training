@@ -99,8 +99,8 @@ jobs: # Definición de los jobs
       - name: Install Playwright browsers # Instala navegadores
         run: npx playwright install --with-deps
 
-      - name: Run Prod Smoke tests # Corre solo smoke tests en producción
-        run: npx playwright test --project=prod --grep @smoke
+      - name: Run Prod Smoke tests # Corre solo prod only tests en producción
+        run: npx playwright test --project=prod --grep @prod-only
 
       - name: Upload Playwright report (Prod) # Sube reporte de prod
         if: always()
