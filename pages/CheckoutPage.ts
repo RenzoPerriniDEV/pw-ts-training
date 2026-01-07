@@ -120,5 +120,25 @@ class CheckoutPage {
     // await page.getByRole('combobox').click();
     // await page.getByText('Argentina').click();
   }
+
+  // Check all radio buttons in a table
+  async checkAllRadiosInTable(page: Page, tableSelector: string) {
+  const table = page.locator(tableSelector);
+
+  const radios = table.locator('input[type="radio"]');
+
+  const count = await radios.count();
+
+  for (let i = 0; i < count; i++) {
+    const radio = radios.nth(i);
+
+    // Scroll + espera automática de Playwright
+    await radio.scrollIntoViewIfNeeded();
+    await radio.check();
+
+    // Validación fuerte
+    //await expect(radio).toBeChecked();
+  }
+}
 }
 export default CheckoutPage;
