@@ -1,0 +1,30 @@
+name: Playwright Tests # Name of the workflow
+on: # Trigger events for the workflow
+  push: # Run workflow on push events
+    branches: [ main ] # Only for main branch
+  pull_request: # Run workflow on pull request events
+    branches: [ main ] # Only for main branch
+
+jobs: # Define jobs to run
+  test: # Name of the job
+    timeout-minutes: 60 # Maximum time the job can run
+    runs-on: ubuntu-latest # Use the latest Ubuntu runner
+
+    steps: # List of steps to execute
+    - uses: actions/checkout@v4 # Check out the repository code
+    - uses: actions/setup-node@v4 # Set up Node.js
+      with: # Specify Node.js version
+        node-version: lts/* # Use the latest LTS version of Node.js
+    - name: Install dependencies # Step name
+      run: npm ci # Install dependencies using npm ci
+    - name: Install Playwright Browsers # Step name
+      run: npx playwright install --with-deps # Install Playwright browsers and dependencies
+    - name: Run Playwright tests # Step name
+      run: npx playwright test # Run Playwright tests
+
+    - uses: actions/upload-artifact@v4 # Upload test report as artifact
+      if: ${{ !cancelled() }} # Only if the job was not cancelled
+      with: # Artifact upload options
+        name: playwright-report # Name of the artifact
+        path: playwright-report/ # Path to the report directory
+        retention-days: 30 # Keep the artifact for 30 days

@@ -1,0 +1,111 @@
+name: Playwright E2E Pipeline # Nombre del workflow que aparece en GitHub Actions
+
+on: # Define cuándo se ejecuta el workflow
+  push: # Se ejecuta cuando hay un push
+    branches: [ main ] # Solo si el push es a la rama main
+  pull_request: # Se ejecuta cuando se crea o actualiza un PR
+    branches: [ main ] # Solo si el PR apunta a main
+  workflow_dispatch: # Permite ejecutarlo manualmente desde GitHub
+
+  schedule: # ⏰ Permite ejecutar el pipeline en horarios programados (cron)
+    - cron: "0 2 * * *" # Se ejecuta todos los días a las 02:00 AM (UTC)
+
+jobs: # Definición de los jobs
+
+  e2e-preprod: # ID del job para preproducción
+    name: E2E Tests - Preprod # Nombre visible del job en GitHub
+    timeout-minutes: 60 # Tiempo máximo antes de cancelar el job
+
+    # 🧠 MATRIX: este job corre en múltiples sistemas operativos en paralelo
+    strategy:
+      fail-fast: false # No cancela los otros si uno falla
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest] # Sistemas operativos
+
+    runs-on: ${{ matrix.os }} # Usa el sistema operativo del matrix
+
+    environment: preprod # Usa el environment "preprod" (puede tener secrets, approvals, etc)
+
+    env: # Variables de entorno del job
+      CI: true # Indica que corre en entorno de CI
+      NODE_ENV: test # Modo test
+      BASE_URL: https://preprod.miapp.com # URL del ambiente preprod
+
+    steps: # Pasos del job
+
+      - name: Checkout repository # Descarga el código del repo
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js # Instala Node.js en el runner
+        uses: actions/setup-node@v4
+        with:
+          node-version: lts/* # Usa la última versión LTS
+          cache: 'npm' # Activa cache de node_modules
+
+      - name: Install dependencies # Instala dependencias del proyecto
+        run: npm ci # npm ci es más rápido y determinístico que npm install
+
+      - name: Install Playwright browsers # Instala navegadores y dependencias del sistema
+        run: npx playwright install --with-deps
+
+      - name: Run Preprod E2E tests # Ejecuta la regresión completa en preprod
+        run: npx playwright test --project=preprod
+
+      - name: Upload Playwright report (Preprod) # Sube el reporte HTML
+        if: always() # Se ejecuta incluso si los tests fallan
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-preprod-${{ matrix.os }} # Un reporte por OS
+          path: playwright-report/
+          retention-days: 30 # Se guarda por 30 días
+
+  e2e-prod: # Job de producción
+    name: E2E Tests - Prod (Smoke) # Nombre visible
+    timeout-minutes: 30 # Menos tiempo porque solo corre smoke tests
+
+    needs: e2e-preprod # ⚠️ Solo corre si TODO preprod pasó en todos los OS
+
+    # 🧠 También corre en múltiples sistemas operativos
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+
+    runs-on: ${{ matrix.os }} # Usa el OS del matrix
+
+    environment: prod # Environment de producción (normalmente protegido con approvals)
+
+    if: github.ref == 'refs/heads/main' # ⚠️ Solo corre si estamos en main
+
+    env:
+      CI: true
+      NODE_ENV: test
+      BASE_URL: https://miapp.com # URL de producción
+
+    steps:
+
+      - name: Checkout repository # Descarga el código
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js # Instala Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+          cache: 'npm'
+
+      - name: Install dependencies # Instala dependencias
+        run: npm ci
+
+      - name: Install Playwright browsers # Instala navegadores
+        run: npx playwright install --with-deps
+
+      - name: Run Prod Smoke tests # Corre solo smoke tests en producción
+        run: npx playwright test --project=prod --grep @smoke
+
+      - name: Upload Playwright report (Prod) # Sube reporte de prod
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-prod-${{ matrix.os }} # Un reporte por OS
+          path: playwright-report/
+          retention-days: 30
