@@ -18,6 +18,7 @@ class CheckoutPage {
   readonly continueSubmit: Locator;
   readonly cartTotal: Locator;
   readonly productsPrice: Locator;
+  readonly selectOption: Locator;
 
   constructor(page: Page) {
     this.page = page;
@@ -40,6 +41,11 @@ class CheckoutPage {
     // Cart
     this.cartTotal = page.locator('p').filter({ hasText: 'Total' }).locator('b');
     this.productsPrice = page.locator('p').filter({ hasNotText: 'Total' }).locator('span.price');
+
+    //Select example
+    this.selectOption = page.locator('select#exampleSelect');
+
+    
   }
 
   // Fill billing address and payment form
@@ -107,6 +113,12 @@ class CheckoutPage {
   async getTotalDisplayed() {
     const totalCartDisplayed = await this.cartTotal.textContent();
     return parseFloat((totalCartDisplayed || '0').replace('$', '').trim());
+  }
+
+  async selectExample(optionValue: string) {
+    await this.selectOption.selectOption(optionValue);
+    // await page.getByRole('combobox').click();
+    // await page.getByText('Argentina').click();
   }
 }
 export default CheckoutPage;
