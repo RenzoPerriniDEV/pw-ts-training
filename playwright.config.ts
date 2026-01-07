@@ -14,6 +14,7 @@ export default defineConfig({
   reporter: 'html',
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
   use: {
+    baseURL: process.env.BASE_URL,
     /* Base URL to use in actions like `await page.goto('')`. */
     // baseURL: 'https://example.com', No sirve para ci cd
     
@@ -42,18 +43,18 @@ export default defineConfig({
 
     {
       name: 'preprod', // 👈 ESTO es lo que apunta --project=preprod
-      use: {
+      /*use: {
         baseURL: 'https://preprod.miapp.com',
-      },
-      grepInvert: /@prod-only/, // No corre tests peligrosos
+      },*/
+      grepInvert: /@prod-only/, // No corre tests de prod.
     },
 
     {
       name: 'prod', // 👈 ESTO es lo que apunta --project=prod
-      use: {
+      /*use: {
         baseURL: 'https://miapp.com',
-      },
-      grep: /@smoke/, // Solo smoke tests
+      },*/
+      grep: /@prod-only/, // Solo test de prod.
     },
 
     /* Test against mobile viewports. */
