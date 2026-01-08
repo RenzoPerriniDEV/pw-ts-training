@@ -109,3 +109,18 @@ jobs: # Definición de los jobs
           name: playwright-report-prod-${{ matrix.os }} # Un reporte por OS
           path: playwright-report/
           retention-days: 30
+     
+
+# Nuevo job para crear PR a main después de preprod exitoso
+jobs:
+  promote-to-prod:
+    if: success()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create PR to main
+        run: |
+          gh pr create \
+            --base main \
+            --head preprod \
+            --title "Release to production" \
+            --body "Auto-generated PR after successful preprod pipeline"
